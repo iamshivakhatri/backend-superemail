@@ -1,0 +1,4 @@
+npm install cors
+npm install express nodemailer
+npm install --save-dev nodemon
+npm install express nodemailer googleapis cors dotenv
