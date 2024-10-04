@@ -1,59 +1,79 @@
-// controllers/emailController.js
+const { getAuthUrl, getTokens, oauth2Client, refreshAccessToken } = require('../utils/oauth2');
 const { google } = require('googleapis');
-const nodemailer = require('nodemailer');
 
-// Create OAuth2 client
-const oauth2Client = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    process.env.REDIRECT_URI
-);
-
-const scopes = [
-    'https://www.googleapis.com/auth/gmail.send',
-    'https://www.googleapis.com/auth/userinfo.email',
-];
-
-// Authorization route
 const authorize = (req, res) => {
-    const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: scopes,
-    });
+    console.log('Authorize function called');
+    const authUrl = getAuthUrl();
+    console.log('Generated Auth URL:', authUrl);
     res.redirect(authUrl);
+};
+
+const handleCallback = async (req, res) => {
+    console.log('Callback received. Query parameters:', req.query);
+    const { code } = req.query;
+    try {
+        if (!code) {
+            throw new Error('No code provided in the callback');
+        }
+        const tokens = await getTokens(code);
+        console.log('Received tokens:', tokens);
+        res.json({ tokens });
+    } catch (error) {
+        console.error('Error in handleCallback:', error);
+        res.status(400).json({ error: 'Failed to get tokens', details: error.message });
+    }
 };
 
 // Send email route
 const sendEmail = async (req, res) => {
-    const { to, subject, body, userEmail, tokens } = req.body; // Include userEmail and tokens
+    const { to, subject, body, userEmail, tokens } = req.body;
 
-    oauth2Client.setCredentials(tokens);
-
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            type: 'OAuth2',
-            user: userEmail,
-            clientId: process.env.CLIENT_ID,
-            clientSecret: process.env.CLIENT_SECRET,
-            refreshToken: tokens.refresh_token,
-            accessToken: tokens.access_token,
-        },
-    });
-
-    const mailOptions = {
-        from: userEmail,
-        to: to,
-        subject: subject,
-        text: body,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            return res.status(500).json({ message: 'Error sending email', error });
+    try {
+        // Check if the access token is expired and refresh if necessary
+        if (Date.now() > tokens.expiry_date) {
+            const newTokens = await refreshAccessToken(tokens.refresh_token);
+            tokens.access_token = newTokens.access_token;
+            tokens.expiry_date = newTokens.expiry_date;
         }
-        res.status(200).json({ message: 'Email sent successfully', info });
-    });
+
+        oauth2Client.setCredentials(tokens);
+
+        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+        const messageParts = [
+            `From: ${userEmail}`,
+            `To: ${to}`,
+            `Subject: ${utf8Subject}`,
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: 7bit',
+            '',
+            body,
+        ];
+        const message = messageParts.join('\n');
+
+        const encodedMessage = Buffer.from(message)
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
+        const res = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: encodedMessage,
+            },
+        });
+
+        console.log('Message sent successfully:', res.data);
+        res.status(200).json({ message: 'Email sent successfully', info: res.data });
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({ message: 'Error sending email', error: error.message });
+    }
 };
 
-module.exports = { authorize, sendEmail };
+console.log('Exporting from emailController:', { authorize, handleCallback, sendEmail });
+
+module.exports = { authorize, handleCallback, sendEmail };
