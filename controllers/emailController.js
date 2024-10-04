@@ -59,15 +59,15 @@ const sendEmail = async (req, res) => {
             .replace(/\//g, '_')
             .replace(/=+$/, '');
 
-        const res = await gmail.users.messages.send({
+        const result = await gmail.users.messages.send({
             userId: 'me',
             requestBody: {
                 raw: encodedMessage,
             },
         });
 
-        console.log('Message sent successfully:', res.data);
-        res.status(200).json({ message: 'Email sent successfully', info: res.data });
+        console.log('Message sent successfully:', result.data);
+        res.status(200).json({ message: 'Email sent successfully', info: result.data });
     } catch (error) {
         console.error('Error sending email:', error);
         res.status(500).json({ message: 'Error sending email', error: error.message });
