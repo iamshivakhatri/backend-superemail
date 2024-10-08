@@ -9,7 +9,7 @@ console.log('Environment variables:', {
 const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
-    'https://6a34-192-122-237-12.ngrok-free.app/auth/google/callback'  // Update this line
+    'https://emailapp-backend.onrender.com/auth/google/callback'  // Update this line
 );
 
 const scopes = [

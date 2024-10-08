@@ -81,7 +81,7 @@ const sendEmail = async (req, res) => {
 
         const results = await Promise.all(recipients.map(async (recipient) => {
             const trackingId = crypto.randomBytes(16).toString('hex');
-            const trackingUrl = `https://6a34-192-122-237-12.ngrok-free.app/auth/track/${trackingId}`;
+            const trackingUrl = `https://emailapp-backend.onrender.com/auth/track/${trackingId}`;
             
             // Combine multiple tracking methods
             const trackingPixel = `
