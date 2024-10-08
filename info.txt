@@ -1,0 +1,3 @@
+http://localhost:3000/auth/google
+
+http://localhost:3000/auth/send-email
