@@ -1,37 +1,40 @@
 const express = require('express');
-const { authorize, handleCallback, sendEmail } = require('../controllers/emailController');
-
-console.log('Imported in auth.js:', { 
-    authorize: typeof authorize, 
-    handleCallback: typeof handleCallback, 
-    sendEmail: typeof sendEmail 
-});
+const { 
+    authorize, 
+    handleCallback, 
+    sendEmail, 
+    trackEmailOpen, 
+    trackEmailLink, 
+    getEmailStats 
+} = require('../controllers/emailController');
+const cors = require('cors');
 
 const router = express.Router();
 
-// Route to start OAuth2 flow
-router.get('/google', (req, res) => {
-    console.log('Google route accessed');
-    if (typeof authorize === 'function') {
-        authorize(req, res);
-    } else {
-        console.error('authorize is not a function');
-        res.status(500).send('Internal Server Error');
-    }
-});
+module.exports = function(corsOptions) {
+    // Add this at the top of your routes
+    router.options('*', cors(corsOptions));
 
-// Route to handle Google callback
-router.get('/google/callback', (req, res) => {
-    console.log('Callback route accessed');
-    if (typeof handleCallback === 'function') {
-        handleCallback(req, res);
-    } else {
-        console.error('handleCallback is not a function');
-        res.status(500).send('Internal Server Error');
-    }
-});
+    // Route to start OAuth2 flow
+    router.get('/google', authorize);
 
-// Route to send an email
-router.post('/send-email', sendEmail);
+    // Route to handle Google callback
+    router.get('/google/callback', handleCallback);
 
-module.exports = router;
+    // Route to send an email
+    router.post('/send-email', cors(corsOptions), sendEmail);
+
+    // Update this route
+    router.get('/track/:trackingId', cors(corsOptions), trackEmailOpen);
+
+    // New route to fetch email stats
+    router.post('/email-stats', cors(corsOptions), getEmailStats);
+
+    // New routes for tracking
+    router.get('/track-link/:trackingId', trackEmailLink);
+
+    // Allow both GET and POST requests for tracking
+    router.post('/track/:trackingId', cors(corsOptions), trackEmailOpen);
+
+    return router;
+};
