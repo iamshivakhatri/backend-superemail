@@ -1,12 +1,19 @@
 const express = require('express');
+
+
 const { 
     authorize, 
     handleCallback, 
     sendEmail, 
     trackEmailOpen, 
     trackEmailLink, 
-    getEmailStats 
+    getEmailStats,
+    getUserInfo // Add this line
 } = require('../controllers/emailController');
+
+
+
+
 const cors = require('cors');
 
 const router = express.Router();
@@ -35,6 +42,8 @@ module.exports = function(corsOptions) {
 
     // Allow both GET and POST requests for tracking
     router.post('/track/:trackingId', cors(corsOptions), trackEmailOpen);
+
+    router.post('/user-info', cors(corsOptions), getUserInfo);
 
     return router;
 };

@@ -12,12 +12,17 @@ const oauth2Client = new google.auth.OAuth2(
     'https://emailapp-backend.onrender.com/auth/google/callback'  // Update this line
 );
 
+
+
 const scopes = [
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/gmail.compose',
     'https://www.googleapis.com/auth/gmail.modify',
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/contacts.readonly',
+    'profile', // Add this line
 ];
 
 // If you're not using the full Gmail API, you might be able to use:
