@@ -298,7 +298,7 @@ const trackEmailJS = async (req, res) => {
 const getEmailStats = async (req, res) => {
     try {
         const { trackingIds } = req.body;
-        console.log('Received tracking IDs:', trackingIds);
+        console.log('getEmailStats called with tracking IDs:', trackingIds);
         
         if (!Array.isArray(trackingIds)) {
             throw new Error('trackingIds must be an array');
@@ -308,7 +308,9 @@ const getEmailStats = async (req, res) => {
         console.log('Current tracking data:', JSON.stringify(trackingData, null, 2));
         
         const stats = trackingIds.reduce((acc, id) => {
+            console.log(`Processing tracking ID: ${id}`);
             const data = trackingData[id] || { openCount: 0, clickCount: 0, devices: [] };
+            console.log(`Data for tracking ID ${id}:`, JSON.stringify(data, null, 2));
             acc.totalOpened += data.openCount || 0;
             acc.totalClicks += data.clickCount || 0;
             if (data.openCount > 0) acc.uniqueOpens += 1;
@@ -324,7 +326,7 @@ const getEmailStats = async (req, res) => {
             return acc;
         }, { totalSent: trackingIds.length, totalOpened: 0, totalClicks: 0, uniqueOpens: 0, detailedStats: [] });
         
-        console.log('Calculated stats:', stats);
+        console.log('Calculated stats:', JSON.stringify(stats, null, 2));
         res.json(stats);
     } catch (error) {
         console.error('Error in getEmailStats:', error);
@@ -369,4 +371,3 @@ module.exports = {
     getEmailStats,
     getUserInfo
 };
-
