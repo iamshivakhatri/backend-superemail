@@ -426,10 +426,6 @@ module.exports = {
     trackEmailOpen, 
     trackEmailLink, 
     trackEmailJS, 
-
-    getEmailStats,
-    getUserInfo
-
     getEmailStats, 
     getUserInfo 
 
