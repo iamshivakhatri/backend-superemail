@@ -332,7 +332,42 @@ const getEmailStats = async (req, res) => {
     }
 };
 
-console.log('Exporting from emailController:', { authorize, handleCallback, sendEmail, trackEmailOpen, trackEmailLink, trackEmailJS, getEmailStats });
+const getUserInfo = async (req, res) => {
+    try {
+        const { tokens } = req.body;
+        
+        if (!tokens || !tokens.access_token) {
+            throw new Error('No access token provided');
+        }
+
+        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                Authorization: `Bearer ${tokens.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch user info');
+        }
+
+        const userInfo = await response.json();
+        res.json(userInfo);
+    } catch (error) {
+        console.error('Error in getUserInfo:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+console.log('Exporting from emailController:', { 
+    authorize, 
+    handleCallback, 
+    sendEmail, 
+    trackEmailOpen, 
+    trackEmailLink, 
+    trackEmailJS, 
+    getEmailStats,
+    getUserInfo
+});
 
 module.exports = { 
     authorize, 
@@ -341,5 +376,6 @@ module.exports = {
     trackEmailOpen, 
     trackEmailLink, 
     trackEmailJS, 
-    getEmailStats 
+    getEmailStats,
+    getUserInfo
 };
