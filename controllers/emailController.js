@@ -359,7 +359,7 @@ const getUserInfo = async (req, res) => {
     }
 };
 
-console.log('Exporting from emailController:', { 
+module.exports = { 
     authorize, 
     handleCallback, 
     sendEmail, 
@@ -368,5 +368,5 @@ console.log('Exporting from emailController:', {
     trackEmailJS, 
     getEmailStats,
     getUserInfo
-});
+};
 

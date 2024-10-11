@@ -47,9 +47,9 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-// Move these routes to the end of the file
-app.get('/auth/track/:trackingId', cors(corsOptions), trackEmailOpen);
-app.post('/auth/track/:trackingId', cors(corsOptions), trackEmailOpen);
+// Remove these lines if they exist, as they're now handled in auth.js
+// app.get('/auth/track/:trackingId', cors(corsOptions), trackEmailOpen);
+// app.post('/auth/track/:trackingId', cors(corsOptions), trackEmailOpen);
 
 // Add this before your routes
 app.use((req, res, next) => {

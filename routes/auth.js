@@ -27,15 +27,13 @@ module.exports = function(corsOptions) {
 
     // Update this route
     router.get('/track/:trackingId', cors(corsOptions), trackEmailOpen);
+    router.post('/track/:trackingId', cors(corsOptions), trackEmailOpen);
 
     // New route to fetch email stats
     router.post('/email-stats', cors(corsOptions), getEmailStats);
 
     // New routes for tracking
     router.get('/track-link/:trackingId', trackEmailLink);
-
-    // Allow both GET and POST requests for tracking
-    router.post('/track/:trackingId', cors(corsOptions), trackEmailOpen);
 
     // Add this new route
     router.post('/user-info', cors(corsOptions), getUserInfo);
