@@ -160,7 +160,7 @@ const trackEmailOpen = async (req, res) => {
         const { trackingId } = req.params;
         console.log(`Tracking request received for ID: ${trackingId}`);
         
-        let trackingData = JSON.parse(await fs.readFile(trackingDataFile, 'utf8'));
+        let trackingData = await readTrackingData();
         console.log('Current tracking data:', JSON.stringify(trackingData, null, 2));
         
         if (!trackingData[trackingId]) {
@@ -169,7 +169,8 @@ const trackEmailOpen = async (req, res) => {
                 lastOpened: null, 
                 email: 'unknown',
                 userAgent: req.headers['user-agent'],
-                ipAddresses: []
+                ipAddresses: [],
+                devices: []
             };
             console.log(`Created new tracking data for ID: ${trackingId}`);
         }
@@ -180,8 +181,15 @@ const trackEmailOpen = async (req, res) => {
             trackingData[trackingId].ipAddresses.push(req.ip);
         }
 
+        // Add device information
+        const userAgent = req.headers['user-agent'];
+        const deviceInfo = parseUserAgent(userAgent);
+        if (!trackingData[trackingId].devices.some(device => device.userAgent === userAgent)) {
+            trackingData[trackingId].devices.push(deviceInfo);
+        }
+
         // Update the file immediately
-        await fs.writeFile(trackingDataFile, JSON.stringify(trackingData, null, 2));
+        await writeTrackingData(trackingData);
         console.log(`Updated tracking data for ID ${trackingId}:`, JSON.stringify(trackingData[trackingId], null, 2));
 
         // Determine the appropriate response based on the request
@@ -202,10 +210,50 @@ const trackEmailOpen = async (req, res) => {
         }
     } catch (error) {
         console.error('Error in trackEmailOpen:', error);
-        // Don't send an error response, as the email client doesn't expect one
         res.status(200).end();
     }
 };
+
+// Add this function to parse the User-Agent string
+function parseUserAgent(userAgent) {
+    let device = 'Unknown';
+    let os = 'Unknown';
+    let browser = 'Unknown';
+
+    if (/mobile/i.test(userAgent)) {
+        device = 'Mobile';
+    } else if (/tablet/i.test(userAgent)) {
+        device = 'Tablet';
+    } else {
+        device = 'Desktop';
+    }
+
+    if (/windows/i.test(userAgent)) {
+        os = 'Windows';
+    } else if (/macintosh|mac os x/i.test(userAgent)) {
+        os = 'macOS';
+    } else if (/linux/i.test(userAgent)) {
+        os = 'Linux';
+    } else if (/android/i.test(userAgent)) {
+        os = 'Android';
+    } else if (/iphone|ipad|ipod/i.test(userAgent)) {
+        os = 'iOS';
+    }
+
+    if (/chrome/i.test(userAgent)) {
+        browser = 'Chrome';
+    } else if (/firefox/i.test(userAgent)) {
+        browser = 'Firefox';
+    } else if (/safari/i.test(userAgent)) {
+        browser = 'Safari';
+    } else if (/msie|trident/i.test(userAgent)) {
+        browser = 'Internet Explorer';
+    } else if (/edge/i.test(userAgent)) {
+        browser = 'Edge';
+    }
+
+    return { device, os, browser, userAgent };
+}
 
 const trackEmailLink = async (req, res) => {
     console.log('trackEmailLink called');
@@ -256,11 +304,11 @@ const getEmailStats = async (req, res) => {
             throw new Error('trackingIds must be an array');
         }
         
-        const trackingData = JSON.parse(await fs.readFile(trackingDataFile, 'utf8'));
+        const trackingData = await readTrackingData();
         console.log('Current tracking data:', JSON.stringify(trackingData, null, 2));
         
         const stats = trackingIds.reduce((acc, id) => {
-            const data = trackingData[id] || { openCount: 0, clickCount: 0 };
+            const data = trackingData[id] || { openCount: 0, clickCount: 0, devices: [] };
             acc.totalOpened += data.openCount || 0;
             acc.totalClicks += data.clickCount || 0;
             if (data.openCount > 0) acc.uniqueOpens += 1;
@@ -270,7 +318,8 @@ const getEmailStats = async (req, res) => {
                 openCount: data.openCount || 0,
                 clickCount: data.clickCount || 0,
                 lastOpened: data.lastOpened,
-                lastClicked: data.lastClicked
+                lastClicked: data.lastClicked,
+                devices: data.devices || []
             });
             return acc;
         }, { totalSent: trackingIds.length, totalOpened: 0, totalClicks: 0, uniqueOpens: 0, detailedStats: [] });

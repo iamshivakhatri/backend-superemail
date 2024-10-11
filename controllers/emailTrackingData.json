@@ -191,5 +191,14 @@
     "ipAddresses": [
       "::1"
     ]
+  },
+  "2eb95f1047eb3a91fa418549997597d9": {
+    "openCount": 1,
+    "lastOpened": "2024-10-08T17:22:56.705Z",
+    "email": "unknown",
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1",
+    "ipAddresses": [
+      "::1"
+    ]
   }
 }

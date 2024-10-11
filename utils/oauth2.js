@@ -9,7 +9,7 @@ console.log('Environment variables:', {
 const oauth2Client = new google.auth.OAuth2(
     process.env.CLIENT_ID,
     process.env.CLIENT_SECRET,
-    'https://6a34-192-122-237-12.ngrok-free.app/auth/google/callback'  // Update this line
+    'https://emailapp-backend.onrender.com/auth/google/callback'  // Update this line
 );
 
 const scopes = [
@@ -18,6 +18,9 @@ const scopes = [
     'https://www.googleapis.com/auth/gmail.modify',
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/contacts.readonly',
+    'profile', // Add this line
 ];
 
 // If you're not using the full Gmail API, you might be able to use:
