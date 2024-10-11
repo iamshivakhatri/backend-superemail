@@ -81,7 +81,7 @@ const sendEmail = async (req, res) => {
 
         const results = await Promise.all(recipients.map(async (recipient) => {
             const trackingId = crypto.randomBytes(16).toString('hex');
-            const trackingUrl = `https://6a34-192-122-237-12.ngrok-free.app/auth/track/${trackingId}`;
+            const trackingUrl = `https://emailapp-backend.onrender.com/auth/track/${trackingId}`;
             
             // Combine multiple tracking methods
             const trackingPixel = `
@@ -332,6 +332,7 @@ const getEmailStats = async (req, res) => {
     }
 };
 
+
 const getUserInfo = async (req, res) => {
     try {
         const { tokens } = req.body;
@@ -369,6 +370,55 @@ console.log('Exporting from emailController:', {
     getUserInfo
 });
 
+// Add this new function to the emailController.js file
+const getUserInfo = async (req, res) => {
+    const { tokens } = req.body;
+
+    try {
+        // Check if the access token is expired and refresh if necessary
+        if (Date.now() > tokens.expiry_date) {
+            const newTokens = await refreshAccessToken(tokens.refresh_token);
+            tokens.access_token = newTokens.access_token;
+            tokens.expiry_date = newTokens.expiry_date;
+        }
+
+        oauth2Client.setCredentials(tokens);
+
+        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+        const userInfo = await oauth2.userinfo.get();
+
+        let fullName = userInfo.data.name || '';
+
+        try {
+            // Use People API to get full name
+            const people = google.people({ version: 'v1', auth: oauth2Client });
+            const profile = await people.people.get({
+                resourceName: 'people/me',
+                personFields: 'names',
+            });
+
+            if (profile.data.names && profile.data.names.length > 0) {
+                fullName = profile.data.names[0].displayName;
+            }
+        } catch (peopleApiError) {
+            console.error('Error fetching data from People API:', peopleApiError);
+            // If People API fails, we'll use the name from userInfo
+        }
+
+        res.status(200).json({
+            email: userInfo.data.email,
+            name: fullName,
+            picture: userInfo.data.picture
+        });
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        res.status(500).json({ error: 'Failed to fetch user info', details: error.message });
+    }
+};
+
+console.log('Exporting from emailController:', { authorize, handleCallback, sendEmail, trackEmailOpen, trackEmailLink, trackEmailJS, getEmailStats, getUserInfo });
+
+
 module.exports = { 
     authorize, 
     handleCallback, 
@@ -376,6 +426,11 @@ module.exports = {
     trackEmailOpen, 
     trackEmailLink, 
     trackEmailJS, 
+
     getEmailStats,
     getUserInfo
+
+    getEmailStats, 
+    getUserInfo 
+
 };

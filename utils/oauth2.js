@@ -12,6 +12,8 @@ const oauth2Client = new google.auth.OAuth2(
     'https://emailapp-backend.onrender.com/auth/google/callback'  // Update this line
 );
 
+
+
 const scopes = [
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/gmail.compose',
