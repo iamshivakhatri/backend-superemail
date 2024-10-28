@@ -4,6 +4,12 @@ const path = require('path');
 const { getAuthUrl, getTokens, oauth2Client, refreshAccessToken } = require('../utils/oauth2');
 const { google } = require('googleapis');
 const NodeCache = require('node-cache');
+const {
+    getCampaignById,
+    updateCampaignStats,
+    getTrackingDataByIds,
+  } = require('../services/campaignService');
+  
 
 const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
 
