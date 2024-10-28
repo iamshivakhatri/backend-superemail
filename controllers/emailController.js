@@ -8,7 +8,7 @@ const {
     getCampaignById,
     updateCampaignStats,
     getTrackingDataByIds,
-  } = require('../services/campaignService');
+  } = require('../services/campaignServices');
   
 
 const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
