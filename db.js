@@ -1,5 +1,6 @@
 // db.js
 const { MongoClient } = require('mongodb');
+// console.log("Connecting to MongoDB...", process.env.MONGODB_URI);
 
 let db;
 

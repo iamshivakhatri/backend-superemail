@@ -10,7 +10,6 @@ const {
     getTrackingDataByIds,
   } = require('../services/campaignServices');
 
-const CampaignTracking = mongoose.model('CampaignTracking'); // Assuming model is already defined
 
   
 
