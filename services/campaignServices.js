@@ -9,15 +9,14 @@ async function getCampaignById(campaignId) {
 async function updateCampaignStats(campaignId, stats) {
   const db = await connectToDatabase();
 
-  const { totalOpened, totalClicks, uniqueOpens } = stats;
+  const { totalSent, totalDelivered } = stats;
 
   return db.collection('Campaigns').updateOne(
     { _id: campaignId },
     {
       $set: {
-        opened: totalOpened,
-        clicked: totalClicks,
-        uniqueOpens: uniqueOpens,
+        sent: totalSent,
+        delivered: totalDelivered,
         updatedAt: new Date(),
       },
     }

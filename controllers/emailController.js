@@ -9,6 +9,9 @@ const {
     updateCampaignStats,
     getTrackingDataByIds,
   } = require('../services/campaignServices');
+
+const CampaignTracking = mongoose.model('CampaignTracking'); // Assuming model is already defined
+
   
 
 const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
@@ -153,8 +156,9 @@ const handleCallback = async (req, res) => {
 
 
 // Send email route
+// Send email route
 const sendEmail = async (req, res) => {
-    const { recipients, subject, body, userEmail, tokens } = req.body;
+    const { recipients, subject, body, userEmail, tokens, campaignId, userId } = req.body;
 
     try {
         // Refresh access token if expired
@@ -171,18 +175,24 @@ const sendEmail = async (req, res) => {
         console.log('Subject:', subject);
         console.log('User Email:', userEmail);
 
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        let totalSent = 0;
+        let totalDelivered = 0;
+
         const results = await Promise.all(recipients.map(async (recipient) => {
-            // Generate a unique tracking ID for each email
+            if (!emailRegex.test(recipient.email)) {
+                console.warn('Invalid email address skipped:', recipient.email);
+                return { email: recipient.email, error: 'Invalid email address' };
+            }
+
+            // Generate tracking ID and URL
             const trackingId = crypto.randomBytes(16).toString('hex');
             const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}`;
-
-            // Add the tracking pixel to the email body
             const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="tracking pixel">`;
 
-            // Encode subject line to UTF-8 for email
             const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-
-            // Construct the email message
             const messageParts = [
                 `From: ${userEmail}`,
                 `To: ${recipient.email}`,
@@ -194,13 +204,13 @@ const sendEmail = async (req, res) => {
                 `${body.replace('[Name]', recipient.name)}${trackingPixel}`,
             ];
             const message = messageParts.join('\n');
-            
-            // Encode the message to base64 for the Gmail API
             const encodedMessage = Buffer.from(message)
                 .toString('base64')
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
+
+            totalSent++; // Increment the sent count
 
             try {
                 // Send the email via Gmail API
@@ -211,22 +221,26 @@ const sendEmail = async (req, res) => {
                     },
                 });
                 console.log('Email sent successfully to:', recipient.email);
+                totalDelivered++; // Increment the delivered count for successful sends
                 return { email: recipient.email, messageId: result.data.id, trackingId };
             } catch (error) {
                 console.error('Error sending email to:', recipient.email, error);
-                throw error;
+                return { email: recipient.email, error: error.message };
             }
         }));
 
-        console.log('All emails sent successfully:', results);
-        res.status(200).json({ message: 'Emails sent successfully', info: results });
+        console.log('Email sending results:', results);
+
+        // Update campaign statistics in the database
+        await updateCampaignStats(campaignId, { totalSent, totalDelivered });
+
+        res.status(200).json({ message: 'Emails sent with results', info: results });
+        
     } catch (error) {
         console.error('Error in sendEmail:', error);
         res.status(500).json({ message: 'Error sending emails', error: error.message });
     }
 };
-
-
 
 
 
