@@ -70,92 +70,6 @@ const handleCallback = async (req, res) => {
 
 
 // Send email route
-// const sendEmail = async (req, res) => {
-//     const { recipients, subject, body, userEmail, tokens, campaignId, userId } = req.body;
-
-//     try {
-//         // Refresh access token if expired
-//         if (Date.now() > tokens.expiry_date) {
-//             const newTokens = await refreshAccessToken(tokens.refresh_token);
-//             tokens.access_token = newTokens.access_token;
-//             tokens.expiry_date = newTokens.expiry_date;
-//         }
-
-//         oauth2Client.setCredentials(tokens);
-//         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-
-//         console.log('Sending emails to:', recipients);
-//         console.log('Subject:', subject);
-//         console.log('User Email:', userEmail);
-
-//         // Email validation regex
-//         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-//         let totalSent = 0;
-//         let totalDelivered = 0;
-
-//         const results = await Promise.all(recipients.map(async (recipient) => {
-//             if (!emailRegex.test(recipient.email)) {
-//                 console.warn('Invalid email address skipped:', recipient.email);
-//                 return { email: recipient.email, error: 'Invalid email address' };
-//             }
-
-//             // Generate tracking ID and URL
-//             const trackingId = crypto.randomBytes(16).toString('hex');
-//             // const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}`;
-//             const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}?campaignId=${campaignId}`;
-//             const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="tracking pixel">`;
-
-//             const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-//             const messageParts = [
-//                 `From: ${userEmail}`,
-//                 `To: ${recipient.email}`,
-//                 `Subject: ${utf8Subject}`,
-//                 'MIME-Version: 1.0',
-//                 'Content-Type: text/html; charset=utf-8',
-//                 'Content-Transfer-Encoding: 7bit',
-//                 '',
-//                 `${body.replace('[Name]', recipient.name)}${trackingPixel}`,
-//             ];
-//             const message = messageParts.join('\n');
-//             const encodedMessage = Buffer.from(message)
-//                 .toString('base64')
-//                 .replace(/\+/g, '-')
-//                 .replace(/\//g, '_')
-//                 .replace(/=+$/, '');
-
-//             totalSent++; // Increment the sent count
-
-//             try {
-//                 // Send the email via Gmail API
-//                 const result = await gmail.users.messages.send({
-//                     userId: 'me',
-//                     requestBody: {
-//                         raw: encodedMessage,
-//                     },
-//                 });
-//                 console.log('Email sent successfully to:', recipient.email);
-//                 totalDelivered++; // Increment the delivered count for successful sends
-//                 return { email: recipient.email, messageId: result.data.id, trackingId };
-//             } catch (error) {
-//                 console.error('Error sending email to:', recipient.email, error);
-//                 return { email: recipient.email, error: error.message };
-//             }
-//         }));
-
-//         console.log('Email sending results:', results);
-
-//         // Update campaign statistics in the database
-//         await updateCampaignStats(campaignId, { totalSent, totalDelivered });
-
-//         res.status(200).json({ message: 'Emails sent with results', info: results });
-        
-//     } catch (error) {
-//         console.error('Error in sendEmail:', error);
-//         res.status(500).json({ message: 'Error sending emails', error: error.message });
-//     }
-// };
-
 const sendEmail = async (req, res) => {
     const { recipients, subject, body, userEmail, tokens, campaignId, userId } = req.body;
 
@@ -188,6 +102,7 @@ const sendEmail = async (req, res) => {
 
             // Generate tracking ID and URL
             const trackingId = crypto.randomBytes(16).toString('hex');
+            // const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}`;
             const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}?campaignId=${campaignId}`;
             const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="tracking pixel">`;
 
@@ -233,6 +148,9 @@ const sendEmail = async (req, res) => {
         // Update campaign statistics in the database
         await updateCampaignStats(campaignId, { totalSent, totalDelivered });
 
+        console.log(`Total sent: ${totalSent}, Total delivered: ${totalDelivered}`);
+        console.log('Emails sent with results:', results);  
+
         res.status(200).json({ message: 'Emails sent with results', info: results });
         
     } catch (error) {
@@ -240,82 +158,6 @@ const sendEmail = async (req, res) => {
         res.status(500).json({ message: 'Error sending emails', error: error.message });
     }
 };
-
-
-
-
-// New route to handle tracking pixel requests
-// const trackEmailOpen = async (req, res) => {
-//     console.log('trackEmailOpen called');
-//     console.log('Full request:', JSON.stringify({
-//         method: req.method,
-//         url: req.url,
-//         headers: req.headers,
-//         query: req.query,
-//         params: req.params,
-//         body: req.body,
-//         ip: req.ip
-//     }, null, 2));
-    
-//     try {
-//         const { trackingId } = req.params;
-//         const campaignId = req.query.campaignId; // Get campaignId from query parameters
-//         console.log(`Tracking request received for ID: ${trackingId}`);
-//         console.log(`Campaign ID: ${campaignId}`);
-        
-//         let trackingData = await readTrackingData();
-//         console.log('Current tracking data:', JSON.stringify(trackingData, null, 2));
-        
-//         if (!trackingData[trackingId]) {
-//             trackingData[trackingId] = { 
-//                 openCount: 0, 
-//                 lastOpened: null, 
-//                 email: 'unknown',
-//                 userAgent: req.headers['user-agent'],
-//                 ipAddresses: [],
-//                 devices: []
-//             };
-//             console.log(`Created new tracking data for ID: ${trackingId}`);
-//         }
-        
-//         trackingData[trackingId].openCount += 1;
-//         trackingData[trackingId].lastOpened = new Date().toISOString();
-//         if (!trackingData[trackingId].ipAddresses.includes(req.ip)) {
-//             trackingData[trackingId].ipAddresses.push(req.ip);
-//         }
-
-//         // Add device information
-//         const userAgent = req.headers['user-agent'];
-//         const deviceInfo = parseUserAgent(userAgent);
-//         if (!trackingData[trackingId].devices.some(device => device.userAgent === userAgent)) {
-//             trackingData[trackingId].devices.push(deviceInfo);
-//         }
-
-//         // Update the file immediately
-//         await writeTrackingData(trackingData);
-//         console.log(`Updated tracking data for ID ${trackingId}:`, JSON.stringify(trackingData[trackingId], null, 2));
-
-//         // Determine the appropriate response based on the request
-//         if (req.headers.accept && req.headers.accept.includes('image/')) {
-//             // Send a 1x1 transparent GIF for image requests
-//             const img = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-//             res.writeHead(200, {
-//                 'Content-Type': 'image/gif',
-//                 'Content-Length': img.length,
-//                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-//                 'Pragma': 'no-cache',
-//                 'Expires': '0',
-//             });
-//             res.end(img);
-//         } else {
-//             // For non-image requests (like clicking the link), send a simple response
-//             res.status(200).send('Email opened');
-//         }
-//     } catch (error) {
-//         console.error('Error in trackEmailOpen:', error);
-//         res.status(200).end();
-//     }
-// };
 
 const trackEmailOpen = async (req, res) => {
     try {
