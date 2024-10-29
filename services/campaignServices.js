@@ -3,16 +3,51 @@ const connectToDatabase = require('../db');
 
 async function getCampaignById(campaignId) {
   const db = await connectToDatabase();
-  return db.collection('Campaigns').findOne({ _id: campaignId });
+  return db.collection('Campaign').findOne({ _id: campaignId });
 }
+
+async function updateOpenedCount(campaignId, trackingId) {
+  const db = await connectToDatabase();
+  
+  // Find the campaign and check if this trackingId is already marked as opened
+  const campaign = await db.collection('Campaign').findOne({ _id: new ObjectId(campaignId) });
+  if (!campaign) {
+      throw new Error(`Campaign with ID ${campaignId} not found.`);
+  }
+
+  // If tracking ID is already in the openedRecipients array, skip the increment
+  const openedRecipients = campaign.openedRecipients || [];
+  if (openedRecipients.includes(trackingId)) {
+      console.log(`Tracking ID ${trackingId} already recorded for campaign ID: ${campaignId}`);
+      return;
+  }
+
+  // Otherwise, increment the opened count and add trackingId to openedRecipients
+  const result = await db.collection('Campaign').updateOne(
+      { _id: new ObjectId(campaignId) },
+      {
+          $inc: { opened: 1 },
+          $push: { openedRecipients: trackingId },
+          $set: { updatedAt: new Date() },
+      }
+  );
+
+  if (result.modifiedCount > 0) {
+      console.log(`Campaign ${campaignId} updated successfully with new open count.`);
+  } else {
+      console.log(`No campaign found with ID: ${campaignId}`);
+  }
+  return result;
+}
+
 
 async function updateCampaignStats(campaignId, stats) {
   const db = await connectToDatabase();
 
   const { totalSent, totalDelivered } = stats;
 
-  return db.collection('Campaigns').updateOne(
-    { _id: campaignId },
+  const result = await db.collection('Campaign').updateOne(
+    { _id: new ObjectId(campaignId) },
     {
       $set: {
         sent: totalSent,
@@ -21,6 +56,13 @@ async function updateCampaignStats(campaignId, stats) {
       },
     }
   );
+  if (result.modifiedCount > 0) {
+    console.log(`Campaign ${campaignId} updated successfully.`);
+    console.log(`New values - Sent: ${sent}, Delivered: ${delivered}`);
+  } else {
+    console.log(`No campaign found with ID: ${campaignId}`);
+  }
+  return result
 }
 
 async function getTrackingDataByIds(trackingIds) {
@@ -35,4 +77,5 @@ module.exports = {
   getCampaignById,
   updateCampaignStats,
   getTrackingDataByIds,
+  updateOpenedCount
 };
