@@ -2,6 +2,7 @@
 const connectToDatabase = require('../db');
 const { ObjectId } = require('mongodb');
 
+
 async function getCampaignById(campaignId) {
   const db = await connectToDatabase();
   return db.collection('Campaign').findOne({ _id: campaignId });
@@ -11,7 +12,7 @@ async function updateOpenedCount(campaignId, trackingId) {
   const db = await connectToDatabase();
   
   // Find the campaign and check if this trackingId is already marked as opened
-  const campaign = await db.collection('Campaign').findOne({ _id: new ObjectId(campaignId) });
+  const campaign = await db.collection('Campaign').findOne({ _id: ObjectId.createFromHexString(campaignId) });
   if (!campaign) {
       throw new Error(`Campaign with ID ${campaignId} not found.`);
   }
@@ -25,7 +26,7 @@ async function updateOpenedCount(campaignId, trackingId) {
 
   // Otherwise, increment the opened count and add trackingId to openedRecipients
   const result = await db.collection('Campaign').updateOne(
-      { _id: new ObjectId(campaignId) },
+      { _id: ObjectId.createFromHexString(campaignId) },
       {
           $inc: { opened: 1 },
           $push: { openedRecipients: trackingId },
@@ -48,7 +49,7 @@ async function updateCampaignStats(campaignId, stats) {
   const { totalSent, totalDelivered } = stats;
 
   const result = await db.collection('Campaign').updateOne(
-    { _id: new ObjectId(campaignId) },
+    { _id:ObjectId.createFromHexString(campaignId) },
     {
       $set: {
         sent: totalSent,

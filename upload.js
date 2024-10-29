@@ -24,7 +24,7 @@ async function updateCampaignStats(campaignId) {
 
     // Update the campaign document with new sent and delivered values
     const result = await campaignsCollection.updateOne(
-      { _id: new ObjectId(campaignId) }, // Ensure `campaignId` is in string format
+      { _id: ObjectId.createFromHexString(campaignId) }, // Ensure `campaignId` is in string format
       {
         $set: {
           sent: sent,
