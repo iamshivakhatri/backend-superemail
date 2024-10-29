@@ -1,5 +1,6 @@
 // services/campaignService.js
 const connectToDatabase = require('../db');
+const { ObjectId } = require('mongodb');
 
 async function getCampaignById(campaignId) {
   const db = await connectToDatabase();
