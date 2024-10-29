@@ -60,7 +60,7 @@ async function updateCampaignStats(campaignId, stats) {
   );
   if (result.modifiedCount > 0) {
     console.log(`Campaign ${campaignId} updated successfully.`);
-    console.log(`New values - Sent: ${sent}, Delivered: ${delivered}`);
+    console.log(`New values - Sent: ${totalSent}, Delivered: ${totalDelivered}`);
   } else {
     console.log(`No campaign found with ID: ${campaignId}`);
   }
