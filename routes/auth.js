@@ -8,7 +8,8 @@ import {
     trackEmailLink, 
     getEmailStats,
     getUserInfo,
-    scheduleEmail 
+    scheduleEmail,
+    testFunction
 } from '../controllers/emailController.js';
 
 const router = express.Router();
@@ -58,6 +59,8 @@ const authRoutes = (corsOptions) => {
 
     // Add this new route
     router.post('/user-info', cors(corsOptions), getUserInfo);
+
+    router.post('/test', cors(corsOptions), testFunction);
 
     return router;
 };

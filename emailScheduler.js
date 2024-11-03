@@ -36,54 +36,35 @@ const emailQueue = new Queue('email-queue', redisConfig);
 // }
 
 const sendEmail = async (recipients, subject, body, userEmail, tokens, campaignId, userId) => {
-    
     try {
-        // Refresh access token if expired
-        console.log("every data",{
-            recipients,
-            subject,
-            body,
-            userEmail,
-            tokens,
-            campaignId
-        }
-            
-        
-        )
-        console.log('Campaign ID:', campaignId); // Debugging line
+        // Check campaign ID format
         if (!campaignId || typeof campaignId !== 'string' || campaignId.length !== 24) {
             throw new Error('Invalid campaignId format. Must be a 24-character hex string.');
         }
+        
+        // Refresh access token if needed
         if (Date.now() > tokens.expiry_date) {
             const newTokens = await refreshAccessToken(tokens.refresh_token);
             tokens.access_token = newTokens.access_token;
             tokens.expiry_date = newTokens.expiry_date;
         }
-        
+
         oauth2Client.setCredentials(tokens);
         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
         
-        console.log('Sending emails to:', recipients);
-        console.log('Subject:', subject);
-        console.log('User Email:', userEmail);
-        
-        // Email validation regex
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
         let totalSent = 0;
         let totalDelivered = 0;
-        
+
         const results = await Promise.all(recipients.map(async (recipient) => {
-            if (!emailRegex.test(recipient.email)) {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email)) {
                 console.warn('Invalid email address skipped:', recipient.email);
                 return { email: recipient.email, error: 'Invalid email address' };
             }
-            
-            // Generate tracking ID and URL
+
             const trackingId = crypto.randomBytes(16).toString('hex');
             const trackingUrl = `https://backend-superemail.onrender.com/auth/track/${trackingId}?campaignId=${campaignId}`;
             const trackingPixel = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="tracking pixel">`;
-            
+
             const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
             const messageParts = [
                 `From: ${userEmail}`,
@@ -95,65 +76,64 @@ const sendEmail = async (recipients, subject, body, userEmail, tokens, campaignI
                 '',
                 `${body.replace('[Name]', recipient.name)}${trackingPixel}`,
             ];
-            const message = messageParts.join('\n');
-            const encodedMessage = Buffer.from(message)
+            const encodedMessage = Buffer.from(messageParts.join('\n'))
                 .toString('base64')
                 .replace(/\+/g, '-')
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
-            
-            totalSent++; // Increment the sent count
-            
+
+            totalSent++;
+
             try {
-                // Send the email via Gmail API
                 const result = await gmail.users.messages.send({
                     userId: 'me',
-                    requestBody: {
-                        raw: encodedMessage,
-                    },
+                    requestBody: { raw: encodedMessage },
                 });
-                console.log('Email sent successfully to:', recipient.email);
-                totalDelivered++; // Increment the delivered count for successful sends
+                totalDelivered++;
                 return { email: recipient.email, messageId: result.data.id, trackingId };
             } catch (error) {
                 console.error('Error sending email to:', recipient.email, error);
                 return { email: recipient.email, error: error.message };
             }
         }));
-        
-        console.log('Email sending results:', results);
 
-
-      
-        
-        // Update campaign statistics in the database
+        // Update stats
         await updateCampaignStats(campaignId, { totalSent, totalDelivered });
-        
-        console.log(`Total sent: ${totalSent}, Total delivered: ${totalDelivered}`);
-        console.log('Emails sent with results:', results);
-        
-       
-        
+
+        // Check if there were any errors
+        const failedEmails = results.filter(result => result.error);
+        if (failedEmails.length > 0) {
+            throw new Error(`Failed to send some emails: ${failedEmails.map(e => e.email).join(', ')}`);
+        }
+
+        return { success: true, results };
     } catch (error) {
         console.error('Error in sendEmail:', error);
+        return { success: false, error: error.message };
     }
 };
 
-// Process multiple jobs concurrently
+// Queue job processing
 emailQueue.process(10, async (job) => {
     console.log(`Started processing job ${job.id} at ${new Date().toISOString()}`);
     const { recipients, subject, body, userEmail, tokens, campaignId } = job.data;
 
     try {
-        await sendEmail(recipients, subject, body, userEmail, tokens, campaignId);
+        const result = await sendEmail(recipients, subject, body, userEmail, tokens, campaignId);
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Unknown error occurred during email sending');
+        }
+        
         console.log(`Completed job ${job.id} for campaign ${campaignId} at ${new Date().toISOString()}`);
-        return { success: true, campaignId };
+        return result;
     } catch (error) {
         console.error(`Error processing job ${job.id} for campaign ${campaignId}:`, error);
         throw error;
     }
 });
 
+// Error handling for scheduling
 export async function scheduleEmail({
     recipients,
     subject,
@@ -204,9 +184,10 @@ export async function scheduleEmail({
         };
     } catch (error) {
         console.error('Error scheduling email:', error);
-        throw error;
+        return { success: false, error: error.message };
     }
 }
+
 
 
 // Queue event listeners
