@@ -1,22 +1,44 @@
-const crypto = require('crypto');
-const fs = require('fs').promises;
-const path = require('path');
-const { getAuthUrl, getTokens, oauth2Client, refreshAccessToken } = require('../utils/oauth2');
-const { google } = require('googleapis');
-const NodeCache = require('node-cache');
-const {
-    updateOpenedCount,
-    getCampaignById,
-    updateCampaignStats,
-    getTrackingDataByIds,
-  } = require('../services/campaignServices');
+import crypto from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { getAuthUrl, getTokens, oauth2Client, refreshAccessToken } from '../utils/oauth2.js';
+import { google } from 'googleapis';
+import { scheduleEmail as schedule} from '../emailScheduler.js';
+import NodeCache from 'node-cache';
+import { 
+    updateOpenedCount, 
+    getCampaignById, 
+    updateCampaignStats, 
+    getTrackingDataByIds 
+} from '../services/campaignServices.js';
+
+
+
+// const crypto = require('crypto');
+// const fs = require('fs').promises;
+// const path = require('path');
+// const { getAuthUrl, getTokens, oauth2Client, refreshAccessToken } = require('../utils/oauth2');
+// const { google } = require('googleapis');
+// const { scheduleEmail }  = require('../emailScheduler.js');
+
+// const NodeCache = require('node-cache');
+
+// const {
+//     updateOpenedCount,
+//     getCampaignById,
+//     updateCampaignStats,
+//     getTrackingDataByIds,
+//   } = require('../services/campaignServices');
 
 
   
 
-const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
+// const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
 
-const trackingDataFile = path.join(__dirname, 'emailTrackingData.json');
+// const trackingDataFile = path.join(__dirname, 'emailTrackingData.json');
+
+// const trackingCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
+// const trackingDataFile = path.join(__dirname, 'emailTrackingData.json');
 
 // Function to read tracking data from file
 async function readTrackingData() {
@@ -161,6 +183,7 @@ const handleCallback = async (req, res) => {
 
 const sendEmail = async (req, res) => {
     const { recipients, subject, body, userEmail, tokens, campaignId, userId } = req.body;
+
     
     try {
         // Refresh access token if expired
@@ -252,6 +275,29 @@ const sendEmail = async (req, res) => {
         console.error('Error in sendEmail:', error);
         res.status(500).json({ message: 'Error sending emails', error: error.message });
     }
+};
+
+
+const scheduleEmail = async (req, res) => {
+    console.log('Schedule email called');
+    const { recipients, subject, body, userEmail, tokens, campaignId, userId, sendDate } = req.body;
+    // display the data
+    console.log("this is the data",{recipients, subject, body, userEmail, tokens, campaignId, userId, sendDate});
+
+
+    const result = await schedule({
+        recipients,
+        subject,
+        body,
+        userEmail,
+        tokens,
+        campaignId,
+        userId,
+        sendDate
+    });
+    console.log('Email scheduled:', result);
+
+    res.status(200).send('Email scheduled');
 };
 
 
@@ -433,7 +479,7 @@ const getUserInfo = async (req, res) => {
     }
 };
 
-module.exports = { 
+export{ 
     authorize, 
     handleCallback, 
     sendEmail, 
@@ -441,5 +487,6 @@ module.exports = {
     trackEmailLink, 
     trackEmailJS, 
     getEmailStats,
-    getUserInfo
+    getUserInfo,
+    scheduleEmail
 };

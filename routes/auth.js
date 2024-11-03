@@ -1,18 +1,37 @@
-const express = require('express');
-const { 
+import express from 'express';
+import cors from 'cors';
+import { 
     authorize, 
     handleCallback, 
     sendEmail, 
     trackEmailOpen, 
     trackEmailLink, 
     getEmailStats,
-    getUserInfo
-} = require('../controllers/emailController');
-const cors = require('cors');
+    getUserInfo,
+    scheduleEmail 
+} from '../controllers/emailController.js';
 
 const router = express.Router();
 
-module.exports = function(corsOptions) {
+// const express = require('express');
+// const { 
+//     authorize, 
+//     handleCallback, 
+//     sendEmail, 
+//     trackEmailOpen, 
+//     trackEmailLink, 
+//     getEmailStats,
+//     getUserInfo,
+//     scheduleEmail
+// } = require('../controllers/emailController');
+
+
+// const cors = require('cors');
+
+
+// const router = express.Router();
+
+const authRoutes = (corsOptions) => {
     // Add this at the top of your routes
     router.options('*', cors(corsOptions));
 
@@ -24,6 +43,8 @@ module.exports = function(corsOptions) {
 
     // Route to send an email
     router.post('/send-email', cors(corsOptions), sendEmail);
+
+    router.post('/schedule-email', cors(corsOptions), scheduleEmail);
 
     // Update this route
     router.get('/track/:trackingId', cors(corsOptions), trackEmailOpen);
@@ -40,3 +61,5 @@ module.exports = function(corsOptions) {
 
     return router;
 };
+
+export default authRoutes;

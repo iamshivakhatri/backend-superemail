@@ -1,5 +1,7 @@
 // db.js
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
+
+// const { MongoClient } = require('mongodb');
 // console.log("Connecting to MongoDB...", process.env.MONGODB_URI);
 
 let db;
@@ -20,4 +22,6 @@ async function connectToDatabase() {
   return db;
 }
 
-module.exports = connectToDatabase;
+// module.exports = connectToDatabase;
+export default connectToDatabase;
+

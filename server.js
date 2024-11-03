@@ -1,10 +1,12 @@
 // server.js
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const authRoutes = require('./routes/auth.js');
-const { trackEmailOpen } = require('./controllers/emailController');
-const compression = require('compression');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+import { trackEmailOpen } from './controllers/emailController.js';
+import compression from 'compression';
+
+dotenv.config();
 
 const app = express();
 
@@ -15,6 +17,25 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
     credentials: true
 };
+// const express = require('express');
+// const cors = require('cors');
+// require('dotenv').config();
+// const authRoutes = require('./routes/auth.js');
+// const { trackEmailOpen } = require('./controllers/emailController');
+// const compression = require('compression');
+
+// const app = express();
+
+// // CORS configuration
+// const corsOptions = {
+//     origin: 'http://localhost:3001', // Replace with your frontend URL
+//     methods: ['GET', 'POST', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+//     credentials: true
+// };
+
+
+
 
 // Apply CORS middleware to all routes
 app.use(cors(corsOptions));

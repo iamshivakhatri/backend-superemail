@@ -1,6 +1,7 @@
 // services/campaignService.js
-const connectToDatabase = require('../db');
-const { ObjectId } = require('mongodb');
+import connectToDatabase from '../db.js';
+import { ObjectId } from 'mongodb';
+
 
 
 async function getCampaignById(campaignId) {
@@ -75,7 +76,7 @@ async function getTrackingDataByIds(trackingIds) {
     .toArray();
 }
 
-module.exports = {
+export {
   getCampaignById,
   updateCampaignStats,
   getTrackingDataByIds,
